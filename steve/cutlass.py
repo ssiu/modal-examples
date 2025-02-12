@@ -23,20 +23,29 @@ def execute_command(command: str):
 
 @app.function(gpu="T4", container_idle_timeout=60, cpu=8.0, memory=32768)
 def f():
-    import subprocess
     import os
-    #execute_command("sudo ls /root")
-    execute_command("pwd")
-    execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     execute_command("git clone https://github.com/ssiu/cuda.git")
+    #execute_command("pwd")
+
+    # # flash attention turing
+    # os.chdir("cuda/flash_attn_turing")
+    # execute_command("git clone https://github.com/NVIDIA/cutlass.git")
+    # execute_command("make launch_flash_attn.o")
+    # execute_command("./launch_flash_attn.o")
+
+    # cutlass learning
     os.chdir("cuda/cutlass")
-    execute_command("nvcc -lineinfo -o sm75_gemm_16x8x8.o -std=c++17 -arch=sm_75 -I/root/cutlass/include -I/root/cutlass/tools/util/include sm75_gemm_16x8x8.cu")
-    execute_command("./sm75_gemm_16x8x8.o")
-    # execute_command("./dev/download_starter_pack.sh")
-    # execute_command("make test_gpt2fp32cu")
-    # execute_command("./test_gpt2fp32cu")
-    # #execute_command("which ncu")
-    # execute_command("sudo ncu ./test_gpt2fp32cu")
-    # # execute_command("sudo /usr/local/cuda/bin/ncu -f --print-level info --target-processes all --set full --import-source on -o test ./test_gpt2fp32cu")
-    # # # execute_command("nsys profile -o test --stats=true -t cuda,osrt,nvtx --force-overwrite=true ./test_gpt2fp32cu")
+    execute_command("git clone https://github.com/NVIDIA/cutlass.git")
+    execute_command("make tensor_op.o")
+    execute_command("./tensor_op.o")
+
+
+    # # gemm experiments
+    # os.chdir("cuda/gemm")
+    # execute_command("git clone https://github.com/NVIDIA/cutlass.git")
+    # execute_command("make launch_sm75_gemm.o")
+    # execute_command("./launch_sm75_gemm.o 1024 1024 1024")
+
+
+
 

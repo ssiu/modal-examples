@@ -35,4 +35,5 @@ def run_flash_attn():
 
     out = flash_attn_func(q, k, v)
     print(out)
+    print(out.dtype)
     assert out.shape == (batch_size, seqlen, nheads, headdim)
