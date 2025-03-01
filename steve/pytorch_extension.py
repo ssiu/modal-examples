@@ -28,7 +28,7 @@ def execute_command(command: str):
 app = App(image=image)
 
 #@app.function(gpu="T4", container_idle_timeout=60, cpu=16.0, memory=65536)
-@app.function(gpu="T4", container_idle_timeout=60, cpu=8.0, memory=32768)
+@app.function(gpu="T4", scaledown_window=60, cpu=8.0, memory=32768)
 def run_extension():
     # official pytorch extension example
     # https://github.com/pytorch/extension-cpp
