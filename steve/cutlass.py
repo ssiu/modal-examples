@@ -21,7 +21,7 @@ def execute_command(command: str):
     subprocess.run(command_args, stdout=sys.stdout, stderr=subprocess.STDOUT)
 
 
-@app.function(gpu="T4", container_idle_timeout=60, cpu=8.0, memory=32768)
+@app.function(gpu="T4", scaledown_window=60, cpu=8.0, memory=32768)
 def f():
     import os
     execute_command("git clone https://github.com/ssiu/cuda.git")
