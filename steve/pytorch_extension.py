@@ -56,6 +56,14 @@ def run_extension():
     # execute_command("pip install .")
     # execute_command("python test/test_gemm.py")
 
+    # simple example for testing 2 tensor outputs
+    import os
+    execute_command("git clone https://github.com/ssiu/cuda.git")
+    os.chdir("cuda/cpp_extension_simple")
+    os.environ["CXX"] = "g++"
+    os.environ["CC"] = "gcc"
+    execute_command("pip install .")
+    execute_command("python test.py")
 
     # # simple example from chatgpt
     # import os
@@ -69,15 +77,15 @@ def run_extension():
     # execute_command("python test.py")
 
     # flash attention
-    import os
-    execute_command("git clone https://github.com/ssiu/cuda.git")
-    os.chdir("cuda/flash_attn_turing")
-    execute_command("git clone https://github.com/NVIDIA/cutlass.git")
-    os.environ["CXX"] = "g++"
-    os.environ["CC"] = "gcc"
-
-
-    execute_command("pip install .")
-    execute_command("python test.py")
+    # import os
+    # execute_command("git clone https://github.com/ssiu/cuda.git")
+    # os.chdir("cuda/flash_attn_turing")
+    # execute_command("git clone https://github.com/NVIDIA/cutlass.git")
+    # os.environ["CXX"] = "g++"
+    # os.environ["CC"] = "gcc"
+    #
+    #
+    # execute_command("pip install .")
+    # execute_command("python test_flash.py 4 4096 32 128")
 
 
