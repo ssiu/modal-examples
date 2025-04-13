@@ -59,7 +59,7 @@ def run_profiler():
     value = torch.rand(32, 8, 16384, 64, dtype=torch.float16, device="cuda")
     #
 
-    with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+    with profile(activities=[ProfilerActivity.CUDA], record_shapes=True) as prof:
         # with sdpa_kernel(backends=[SDPBackend.EFFICIENT_ATTENTION]):
         #     output =  F.scaled_dot_product_attention(query, key, value)
         output = F.scaled_dot_product_attention(query, key, value)
