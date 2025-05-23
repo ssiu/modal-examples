@@ -38,12 +38,12 @@ def f():
     execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     # execute_command("make print_layout.o")
     # execute_command("./print_layout.o")
-    execute_command("make tensor_op.o")
-    execute_command("./tensor_op.o")
+    # execute_command("make tensor_op.o")
+    # execute_command("./tensor_op.o")
     # execute_command("make convert_type.o")
     # execute_command("./convert_type.o")
-    # execute_command("make tensor_mma.o")
-    # execute_command("./tensor_mma.o")
+    execute_command("make tensor_mma.o")
+    execute_command("./tensor_mma.o")
 
 
     # # gemm experiments
