@@ -37,7 +37,7 @@ def run_vllm():
     from vllm import LLM, SamplingParams
     from torch.profiler import profile, record_function, ProfilerActivity
 
-    #os.environ["HF_TOKEN"] = "xxx"
+    # os.environ["HF_TOKEN"] = "xxx"
 
 #     prompt = """
 #     WESTMORELAND
