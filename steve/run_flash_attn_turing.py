@@ -28,7 +28,7 @@ def execute_command(command: str):
 app = App(image=image)
 
 #@app.function(gpu="T4", container_idle_timeout=60, cpu=16.0, memory=65536)
-@app.function(gpu="T4", cpu=8.0, memory=32768)
+@app.function(gpu="T4", cpu=16.0, memory=65536)
 def run_extension():
     # # flash attention dev
     # import os
@@ -51,7 +51,8 @@ def run_extension():
     import torch
     execute_command("git clone https://github.com/ssiu/flash-attention-turing.git")
     os.chdir("flash-attention-turing")
-    execute_command("git checkout fwd_causal")
+    #execute_command("git checkout params")
+    execute_command("git checkout test_params")
     #execute_command("git submodule update --init --recursive")
     #execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     os.environ["CXX"] = "g++"
@@ -59,14 +60,21 @@ def run_extension():
     # execute_command("ls /root/flash-attention-turing/csrc/")
     # execute_command("ls /root/flash-attention-turing/csrc/cutlass/")
     #execute_command("ls /root/flash-attention-turing/csrc/cutlass/include/cute/tensor.hpp")
-    execute_command("pip install .")
+    execute_command("pip install -v .")
     print(torch.version.cuda)
     print(torch.__version__)
     #execute_command("python utils/test_flash_fwd_causal.py 1 128 1 128 1")
     #execute_command("python utils/test_flash_fwd_causal.py 1 256 1 128 1")
-    #execute_command("python utils/test_flash_fwd_causal.py 1 256 1 128 0")
+    # execute_command("python utils/test_flash_fwd_causal.py 1 128 1 128 0")
 
-    execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 1")
-    execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 0")
+    # execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 0")
+    # execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 1")
 
     # execute_command("python utils/scratch_debug.py")
+
+    # headdim = 64
+    # execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 64 0")
+    # execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 64 1")
+
+    execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 0")
+    #execute_command("python utils/test_flash_fwd_causal.py 4 4096 32 128 1")
