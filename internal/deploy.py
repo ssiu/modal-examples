@@ -1,4 +1,5 @@
 import argparse
+import os
 import re
 import shlex
 import subprocess
@@ -20,6 +21,7 @@ def deploy(
     module_with_app: Path,
     dry_run: bool,
     filter_pttrn: Optional[str],
+    env: Optional[dict[str, str]],
 ) -> Optional[DeployError]:
     if filter_pttrn and not re.match(filter_pttrn, module_with_app.name):
         return None
@@ -37,6 +39,7 @@ def deploy(
             shlex.split(deploy_command),
             cwd=module_with_app.parent,
             capture_output=True,
+            env=os.environ | (env or {}),
         )
         if r.returncode != 0:
             print(
@@ -44,9 +47,7 @@ def deploy(
                 file=sys.stderr,
             )
             print(r.stderr)
-            return DeployError(
-                stdout=r.stdout, stderr=r.stderr, code=r.returncode
-            )
+            return DeployError(stdout=r.stdout, stderr=r.stderr, code=r.returncode)
         else:
             print(f"✔️ deployed '{module_with_app.name}")
     return None
@@ -76,18 +77,15 @@ def main(argv: Optional[list[str]] = None) -> int:
             "INFO: dry-run is active. Intended deployments will be displayed to console."
         )
 
-    example_modules = (
-        ex for ex in get_examples() if ex.type == ExampleType.MODULE
-    )
-    filter_pttrn = (
-        (r".*" + arguments.filter + r".*") if arguments.filter else None
-    )
+    example_modules = (ex for ex in get_examples() if ex.type == ExampleType.MODULE)
+    filter_pttrn = (r".*" + arguments.filter + r".*") if arguments.filter else None
     results = [
         deploy(
             deployable=bool(ex_mod.metadata.get("deploy")),
             module_with_app=Path(ex_mod.module),
             dry_run=arguments.dry_run,
             filter_pttrn=filter_pttrn,
+            env=ex_mod.metadata.get("env"),
         )
         for ex_mod in example_modules
     ]

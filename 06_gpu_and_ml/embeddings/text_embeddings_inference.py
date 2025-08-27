@@ -1,8 +1,9 @@
 # ---
 # cmd: ["modal", "run", "06_gpu_and_ml/embeddings/text_embeddings_inference.py::embed_dataset"]
 # ---
+
 # # Run TextEmbeddingsInference (TEI) on Modal
-#
+
 # This example runs the [Text Embedding Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) toolkit on the Hacker News BigQuery public dataset.
 
 import json
@@ -13,14 +14,15 @@ from pathlib import Path
 
 import modal
 
-GPU_CONFIG = modal.gpu.A10G()
+GPU_CONFIG = "A10G"
 MODEL_ID = "BAAI/bge-base-en-v1.5"
 BATCH_SIZE = 32
 DOCKER_IMAGE = (
-    "ghcr.io/huggingface/text-embeddings-inference:86-0.4.0"  # Ampere 86 for A10s.
-    # "ghcr.io/huggingface/text-embeddings-inference:0.4.0" # Ampere 80 for A100s.
-    # "ghcr.io/huggingface/text-embeddings-inference:0.3.0"  # Turing for T4s.
+    "ghcr.io/huggingface/text-embeddings-inference:86-1.7"  # Ampere 86 for A10s.
+    # "ghcr.io/huggingface/text-embeddings-inference:1.7" # Ampere 80 for A100s.
+    # "ghcr.io/huggingface/text-embeddings-inference:turing-1.7"  # Turing for T4s.
 )
+PORT = 8000
 
 DATA_PATH = Path("/data/dataset.jsonl")
 
@@ -38,7 +40,7 @@ def spawn_server() -> subprocess.Popen:
     # Poll until webserver at 127.0.0.1:8000 accepts connections before running inputs.
     while True:
         try:
-            socket.create_connection(("127.0.0.1", 8000), timeout=1).close()
+            socket.create_connection(("127.0.0.1", PORT), timeout=1).close()
             print("Webserver ready!")
             return process
         except (socket.timeout, ConnectionRefusedError):
@@ -46,9 +48,7 @@ def spawn_server() -> subprocess.Popen:
             # If so, a connection can never be made.
             retcode = process.poll()
             if retcode is not None:
-                raise RuntimeError(
-                    f"launcher exited unexpectedly with code {retcode}"
-                )
+                raise RuntimeError(f"launcher exited unexpectedly with code {retcode}")
 
 
 def download_model():
@@ -58,7 +58,7 @@ def download_model():
 
 volume = modal.Volume.from_name("tei-hn-data", create_if_missing=True)
 
-app = modal.App("example-tei")
+app = modal.App("example-text-embeddings-inference")
 
 
 tei_image = (
@@ -79,11 +79,11 @@ with tei_image.imports():
 @app.cls(
     gpu=GPU_CONFIG,
     image=tei_image,
-    # Use up to 20 GPU containers at once.
-    concurrency_limit=20,
-    # Allow each container to process up to 10 batches at once.
-    allow_concurrent_inputs=10,
+    max_containers=20,  # Use up to 20 GPU containers at once.
 )
+@modal.concurrent(
+    max_inputs=10
+)  # Allow each container to process up to 10 batches at once.
 class TextEmbeddingsInference:
     @modal.enter()
     def setup_server(self):
@@ -116,9 +116,9 @@ def download_data():
         "bigquery-public-data.hacker_news.full",
         max_results=100_000,
     )
-    df = iterator.to_dataframe(progress_bar_type="tqdm")
+    df = iterator.to_dataframe(progress_bar_type="tqdm").dropna()
+
     df["id"] = df["id"].astype(int)
-    # TODO: better chunking / splitting.
     df["text"] = df["text"].apply(lambda x: x[:512])
 
     data = list(zip(df["id"], df["text"]))
@@ -164,8 +164,6 @@ def embed_dataset():
 
     # data is of type list[tuple[str, str]].
     # starmap spreads the tuples into positional arguments.
-    for output_batch in model.embed.map(
-        generate_batches(), order_outputs=False
-    ):
+    for output_batch in model.embed.map(generate_batches(), order_outputs=False):
         # Do something with the outputs.
         pass

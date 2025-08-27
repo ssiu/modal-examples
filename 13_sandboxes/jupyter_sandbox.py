@@ -1,6 +1,5 @@
 # ---
 # cmd: ["python", "13_sandboxes/jupyter_sandbox.py"]
-# tags: ["use-case-sandboxed-code-execution"]
 # pytest: false
 # ---
 
@@ -22,7 +21,7 @@ import urllib.request
 
 import modal
 
-app = modal.App.lookup("example-jupyter", create_if_missing=True)
+app = modal.App.lookup("example-jupyter-sandbox", create_if_missing=True)
 
 # We define a custom Docker image that has Jupyter and some other dependencies installed.
 # Using a pre-defined image allows us to avoid re-installing packages on every Sandbox startup.
@@ -88,9 +87,7 @@ print(f"🏖️  Jupyter notebook is running at: {url}")
 
 def is_jupyter_up():
     try:
-        response = urllib.request.urlopen(
-            f"{tunnel.url}/api/status?token={token}"
-        )
+        response = urllib.request.urlopen(f"{tunnel.url}/api/status?token={token}")
         if response.getcode() == 200:
             data = json.loads(response.read().decode())
             return data.get("started", False)

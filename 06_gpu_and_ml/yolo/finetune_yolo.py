@@ -1,17 +1,21 @@
 # ---
 # args: ["--no-quick-check"]
-# tags: ["use-case-image-video-3d", "use-case-finetuning"]
+# mypy: ignore-errors
 # ---
-# # Fine-Tuning and Inference for Computer Vision with YOLO
-#
+
+# # Fine-tune open source YOLO models for object detection
+
 # Example by [@Erik-Dunteman](https://github.com/erik-dunteman) and [@AnirudhRahul](https://github.com/AnirudhRahul/).
 
 # The popular "You Only Look Once" (YOLO) model line provides high-quality object detection in an economical package.
 # In this example, we use the [YOLOv10](https://docs.ultralytics.com/models/yolov10/) model, released on May 23, 2024.
-#
+
 # We will:
+
 # - Download two custom datasets from the [Roboflow](https://roboflow.com/) computer vision platform: a dataset of birds and a dataset of bees
+
 # - Fine-tune the model on those datasets, in parallel, using the [Ultralytics package](https://docs.ultralytics.com/)
+
 # - Run inference with the fine-tuned models on single images and on streaming frames
 
 # For commercial use, be sure to consult the [Ultralytics software license options](https://docs.ultralytics.com/#yolo-licenses-how-is-ultralytics-yolo-licensed),
@@ -42,27 +46,31 @@ image = (
     )
 )
 
-# We also create a persistent [Volume](https://modal.com/docs/guide/volumes) for storing datasets, trained weights, and inference outputs.
+# We also create a persistent [Volume](https://modal.com/docs/guide/volumes) for storing datasets, trained weights, and inference outputs. For more on storing model weights on Modal, see
+# [this guide](https://modal.com/docs/guide/model-weights).
 
-volume = modal.Volume.from_name("yolo-finetune", create_if_missing=True)
+volume = modal.Volume.from_name("example-yolo-finetune", create_if_missing=True)
 volume_path = (  # the path to the volume from within the container
     Path("/root") / "data"
 )
 
 # We attach both of these to a Modal [App](https://modal.com/docs/guide/apps).
-app = modal.App("yolo-finetune", image=image, volumes={volume_path: volume})
+app = modal.App("example-yolo-finetune", image=image, volumes={volume_path: volume})
 
 
 # ## Download a dataset
-#
+
 # We'll be downloading our data from the [Roboflow](https://roboflow.com/) computer vision platform, so to follow along you'll need to:
+
 # - Create a free account on [Roboflow](https://app.roboflow.com/)
+
 # - [Generate a Private API key](https://app.roboflow.com/settings/api)
+
 # - Set up a Modal [Secret](https://modal.com/docs/guide/secrets) called `roboflow-api-key` in the Modal UI [here](https://modal.com/secrets),
 # setting the `ROBOFLOW_API_KEY` to the value of your API key.
-#
+
 # You're also free to bring your own dataset with a config in YOLOv10-compatible yaml format.
-#
+
 # We'll be training on the medium size model, but you're free to experiment with [other model sizes](https://docs.ultralytics.com/models/yolov10/#model-variants).
 
 
@@ -81,7 +89,11 @@ class DatasetConfig:
         return f"{self.workspace_id}/{self.project_id}/{self.version}"
 
 
-@app.function(secrets=[modal.Secret.from_name("roboflow-api-key")])
+@app.function(
+    secrets=[
+        modal.Secret.from_name("roboflow-api-key", required_keys=["ROBOFLOW_API_KEY"])
+    ]
+)
 def download_dataset(config: DatasetConfig):
     import os
 
@@ -104,7 +116,7 @@ def download_dataset(config: DatasetConfig):
 MINUTES = 60
 
 TRAIN_GPU_COUNT = 1
-TRAIN_GPU = modal.gpu.A100(count=TRAIN_GPU_COUNT)
+TRAIN_GPU = f"A100:{TRAIN_GPU_COUNT}"
 TRAIN_CPU_COUNT = 4
 
 
@@ -137,9 +149,7 @@ def train(
         else 0.04,  # fraction of dataset to use for training/validation
         # optimization config
         device=list(range(TRAIN_GPU_COUNT)),  # use the GPU(s)
-        epochs=8
-        if not quick_check
-        else 1,  # pass over entire dataset this many times
+        epochs=8 if not quick_check else 1,  # pass over entire dataset this many times
         batch=0.95,  # automatic batch size to target fraction of GPU util
         seed=117,  # set seed for reproducibility
         # data processing config
@@ -156,9 +166,9 @@ def train(
 
 
 # ## Run inference on single inputs and on streams
-#
+
 # We demonstrate two different ways to run inference -- on single images and on a stream of images.
-#
+
 # The images we use for inference are loaded from the test set, which was added to our Volume when we downloaded the dataset.
 # Each image read takes ~50ms, and inference can take ~5ms, so the disk read would be our biggest bottleneck if we just looped over the image paths.
 # To avoid it, we parallelize the disk reads across many workers using Modal's [`.map`](https://modal.com/docs/guide/scale),
@@ -181,8 +191,7 @@ def read_image(image_path: str):
 
 @app.cls(gpu="a10g")
 class Inference:
-    def __init__(self, weights_path):
-        self.weights_path = weights_path
+    weights_path: str = modal.parameter()
 
     @modal.enter()
     def load_model(self):
@@ -215,9 +224,7 @@ class Inference:
         import os
         import time
 
-        image_files = [
-            os.path.join(batch_dir, f) for f in os.listdir(batch_dir)
-        ]
+        image_files = [os.path.join(batch_dir, f) for f in os.listdir(batch_dir)]
 
         completed, start = 0, time.monotonic_ns()
         for image in read_image.map(image_files):
@@ -247,16 +254,16 @@ class Inference:
 
 
 # ## Running the example
-#
+
 # We'll kick off our parallel training jobs and run inference from the command line.
-#
+
 # ```bash
 # modal run finetune_yolo.py
 # ```
-#
+
 # This runs the training in `quick_check` mode, useful for debugging the pipeline and getting a feel for it.
 # To do a longer run that actually meaningfully improves performance, use:
-#
+
 # ```bash
 # modal run finetune_yolo.py --no-quick-check
 # ```
@@ -301,7 +308,7 @@ def main(quick_check: bool = True, inference_only: bool = False):
     # let's run inference!
     for model_id, dataset in zip(model_ids, datasets):
         inference = Inference(
-            volume_path / "runs" / model_id / "weights" / "best.pt"
+            weights_path=str(volume_path / "runs" / model_id / "weights" / "best.pt")
         )
 
         # predict on a single image and save output to the volume
@@ -322,9 +329,7 @@ def main(quick_check: bool = True, inference_only: bool = False):
                 break
 
         # streaming inference on images from the test set
-        print(
-            f"{model_id}: Streaming inferences on all images in the test set..."
-        )
+        print(f"{model_id}: Streaming inferences on all images in the test set...")
         count = 0
         for detection in inference.streaming_count.remote_gen(
             batch_dir=f"{volume_path}/dataset/{dataset.id}/test/images"
@@ -338,7 +343,7 @@ def main(quick_check: bool = True, inference_only: bool = False):
 
 
 # ## Addenda
-#
+
 # The rest of the code in this example is utility code.
 
 warnings.filterwarnings(  # filter warning from the terminal image library

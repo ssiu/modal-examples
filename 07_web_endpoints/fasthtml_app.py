@@ -1,5 +1,4 @@
 # ---
-# deploy: true
 # cmd: ["modal", "serve", "07_web_endpoints/fasthtml_app.py"]
 # ---
 
@@ -15,7 +14,7 @@
 
 import modal
 
-app = modal.App("example-fasthtml")
+app = modal.App("example-fasthtml-app")
 
 
 @app.function(

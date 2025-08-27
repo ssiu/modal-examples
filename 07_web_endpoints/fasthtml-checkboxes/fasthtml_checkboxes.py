@@ -1,12 +1,12 @@
 # ---
+# cmd: ["modal", "serve", "-m", "07_web_endpoints.fasthtml-checkboxes.fasthtml_checkboxes"]
 # deploy: true
-# cmd: ["modal", "serve", "07_web_endpoints.fasthtml-checkboxes.fasthtml_checkboxes"]
 # mypy: ignore-errors
 # ---
 
 # # Deploy 100,000 multiplayer checkboxes on Modal with FastHTML
 
-# ![Screenshot of FastHTML Checkboxes UI](./ui.png)
+# [![Screenshot of FastHTML Checkboxes UI](./ui.png)](https://modal-labs-examples--example-fasthtml-checkboxes-web.modal.run)
 
 # This example shows how you can deploy a multiplayer checkbox game with FastHTML on Modal.
 
@@ -26,23 +26,20 @@ import modal
 
 from .constants import N_CHECKBOXES
 
-app = modal.App("example-checkboxes")
-db = modal.Dict.from_name("example-checkboxes-db", create_if_missing=True)
+app = modal.App("example-fasthtml-checkboxes")
+db = modal.Dict.from_name("example-fasthtml-checkboxes-db", create_if_missing=True)
 
 css_path_local = Path(__file__).parent / "styles.css"
-css_path_remote = Path("/assets/styles.css")
+css_path_remote = "/assets/styles.css"
 
 
 @app.function(
-    image=modal.Image.debian_slim(python_version="3.12").pip_install(
-        "python-fasthtml==0.6.9", "inflect~=7.4.0"
-    ),
-    concurrency_limit=1,  # we currently maintain state in memory, so we restrict the server to one worker
-    mounts=[
-        modal.Mount.from_local_file(css_path_local, remote_path=css_path_remote)
-    ],
-    allow_concurrent_inputs=1000,
+    image=modal.Image.debian_slim(python_version="3.12")
+    .pip_install("python-fasthtml==0.12.21", "inflect~=7.4.0")
+    .add_local_file(css_path_local, remote_path=css_path_remote),
+    max_containers=1,  # we currently maintain state in memory, so we restrict the server to one worker
 )
+@modal.concurrent(max_inputs=1000)
 @modal.asgi_app()
 def web():
     import fasthtml.common as fh

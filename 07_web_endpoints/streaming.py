@@ -1,9 +1,9 @@
 # ---
 # cmd: ["modal", "serve", "07_web_endpoints/streaming.py"]
-# deploy: true
 # ---
 
-# # Deploy FastAPI app with streaming results with Modal
+# # Deploy a FastAPI app with streaming responses
+
 # This example shows how you can deploy a [FastAPI](https://fastapi.tiangolo.com/) app with Modal that streams results back to the client.
 
 import asyncio
@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
 image = modal.Image.debian_slim().pip_install("fastapi[standard]")
-app = modal.App("example-fastapi-streaming", image=image)
+app = modal.App("example-streaming", image=image)
 
 web_app = FastAPI()
 
@@ -31,16 +31,14 @@ async def fake_video_streamer():
 
 
 # ASGI app with streaming handler.
-#
+
 # This `fastapi_app` also uses the fake video streamer async generator,
 # passing it directly into `StreamingResponse`.
 
 
 @web_app.get("/")
 async def main():
-    return StreamingResponse(
-        fake_video_streamer(), media_type="text/event-stream"
-    )
+    return StreamingResponse(fake_video_streamer(), media_type="text/event-stream")
 
 
 @app.function()
@@ -61,7 +59,7 @@ def sync_fake_video_streamer():
 
 
 @app.function()
-@modal.web_endpoint()
+@modal.fastapi_endpoint()
 def hook():
     return StreamingResponse(
         sync_fake_video_streamer.remote_gen(), media_type="text/event-stream"
@@ -79,26 +77,19 @@ def map_me(i):
 
 
 @app.function()
-@modal.web_endpoint()
+@modal.fastapi_endpoint()
 def mapped():
-    return StreamingResponse(
-        map_me.map(range(10)), media_type="text/event-stream"
-    )
+    return StreamingResponse(map_me.map(range(10)), media_type="text/event-stream")
 
 
-# A collection of basic examples of a webhook streaming response.
-#
-#
-# ```
+# To try for yourself, run
+
+# ```shell
 # modal serve streaming.py
 # ```
-#
-# To try out the webhook, ensure that your client is not buffering the server response
+
+# and then send requests to the URLs that appear in the terminal output.
+
+# Make sure that your client is not buffering the server response
 # until it gets newline (\n) characters. By default browsers and `curl` are buffering,
 # though modern browsers should respect the "text/event-stream" content type header being set.
-#
-# ```shell
-# curl --no-buffer https://modal-labs--example-fastapi-streaming-fastapi-app.modal.run
-# curl --no-buffer https://modal-labs--example-fastapi-streaming-hook.modal.run
-# curl --no-buffer https://modal-labs--example-fastapi-streaming-mapped.modal.run
-# ````

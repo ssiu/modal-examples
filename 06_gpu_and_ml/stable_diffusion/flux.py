@@ -1,10 +1,12 @@
 # ---
 # output-directory: "/tmp/flux"
 # args: ["--no-compile"]
-# tags: ["use-case-image-video-3d", "featured"]
 # ---
 
-# # Run Flux fast with `torch.compile` on Hopper GPUs
+# # Run Flux fast on H100s with `torch.compile`
+
+# _Update: To speed up inference by another >2x, check out the additional optimization
+# techniques we tried in [this blog post](https://modal.com/blog/flux-3x-faster)!_
 
 # In this guide, we'll run Flux as fast as possible on Modal using open source tools.
 # We'll use `torch.compile` and NVIDIA H100 GPUs.
@@ -33,36 +35,44 @@ cuda_dev_image = modal.Image.from_registry(
 # For Hugging Face's [Diffusers](https://github.com/huggingface/diffusers) library
 # we install from GitHub source and so pin to a specific commit.
 
-# PyTorch added [faster attention kernels for Hopper GPUs in version 2.5
+# PyTorch added faster attention kernels for Hopper GPUs in version 2.5.
 
 diffusers_commit_sha = "81cf3b2f155f1de322079af28f625349ee21ec6b"
 
-flux_image = cuda_dev_image.apt_install(
-    "git",
-    "libglib2.0-0",
-    "libsm6",
-    "libxrender1",
-    "libxext6",
-    "ffmpeg",
-    "libgl1",
-).pip_install(
-    "invisible_watermark==0.2.0",
-    "transformers==4.44.0",
-    "accelerate==0.33.0",
-    "safetensors==0.4.4",
-    "sentencepiece==0.2.0",
-    "torch==2.5.0",
-    f"git+https://github.com/huggingface/diffusers.git@{diffusers_commit_sha}",
-    "numpy<2",
+flux_image = (
+    cuda_dev_image.apt_install(
+        "git",
+        "libglib2.0-0",
+        "libsm6",
+        "libxrender1",
+        "libxext6",
+        "ffmpeg",
+        "libgl1",
+    )
+    .pip_install(
+        "invisible_watermark==0.2.0",
+        "transformers==4.44.0",
+        "huggingface_hub[hf_transfer]==0.26.2",
+        "accelerate==0.33.0",
+        "safetensors==0.4.4",
+        "sentencepiece==0.2.0",
+        "torch==2.5.0",
+        f"git+https://github.com/huggingface/diffusers.git@{diffusers_commit_sha}",
+        "numpy<2",
+    )
+    .env({"HF_HUB_ENABLE_HF_TRANSFER": "1", "HF_HUB_CACHE": "/cache"})
 )
 
 # Later, we'll also use `torch.compile` to increase the speed further.
 # Torch compilation needs to be re-executed when each new container starts,
-# So we turn on some extra caching to reduce compile times for later containers.
+# so we turn on some extra caching to reduce compile times for later containers.
 
 flux_image = flux_image.env(
-    {"TORCHINDUCTOR_CACHE_DIR": "/root/.inductor-cache"}
-).env({"TORCHINDUCTOR_FX_GRAPH_CACHE": "1"})
+    {
+        "TORCHINDUCTOR_CACHE_DIR": "/root/.inductor-cache",
+        "TORCHINDUCTOR_FX_GRAPH_CACHE": "1",
+    }
+)
 
 # Finally, we construct our Modal [App](https://modal.com/docs/reference/modal.App),
 # set its default image to the one we just constructed,
@@ -78,59 +88,51 @@ with flux_image.imports():
 
 # Next, we map the model's setup and inference code onto Modal.
 
-# 1. We run any setup that can be persisted to disk in methods decorated with `@build`.
-# In this example, that includes downloading the model weights.
-# 2. We run any additional setup, like moving the model to the GPU, in methods decorated with `@enter`.
-# We do our model optimizations in this step. For details, see the section on `torch.compile` below.
-# 3. We run the actual inference in methods decorated with `@method`.
+# 1. We run the model setup in the method decorated with `@modal.enter()`. This includes loading the
+# weights and moving them to the GPU, along with an optional `torch.compile` step (see details below).
+# The `@modal.enter()` decorator ensures that this method runs only once, when a new container starts,
+# instead of in the path of every call.
+
+# 2. We run the actual inference in methods decorated with `@modal.method()`.
+
+# *Note: Access to the Flux.1-schnell model on Hugging Face is
+# [gated by a license agreement](https://huggingface.co/docs/hub/en/models-gated)
+# which you must agree to
+# [here](https://huggingface.co/black-forest-labs/FLUX.1-schnell).
+# After you have accepted the license,
+# [create a Modal Secret](https://modal.com/secrets)
+# with the name `huggingface-secret` following the instructions in the template.*
 
 MINUTES = 60  # seconds
-VARIANT = "schnell"  # or "dev", but note [dev] requires you to accept terms and conditions on HF
+VARIANT = "schnell"  # or "dev"
 NUM_INFERENCE_STEPS = 4  # use ~50 for [dev], smaller for [schnell]
 
 
 @app.cls(
-    gpu="H100",  # fastest GPU on Modal
-    container_idle_timeout=20 * MINUTES,
+    gpu="H100",  # fast GPU with strong software support
+    scaledown_window=20 * MINUTES,
     timeout=60 * MINUTES,  # leave plenty of time for compilation
     volumes={  # add Volumes to store serializable compilation artifacts, see section on torch.compile below
+        "/cache": modal.Volume.from_name("hf-hub-cache", create_if_missing=True),
         "/root/.nv": modal.Volume.from_name("nv-cache", create_if_missing=True),
-        "/root/.triton": modal.Volume.from_name(
-            "triton-cache", create_if_missing=True
-        ),
+        "/root/.triton": modal.Volume.from_name("triton-cache", create_if_missing=True),
         "/root/.inductor-cache": modal.Volume.from_name(
             "inductor-cache", create_if_missing=True
         ),
     },
+    secrets=[modal.Secret.from_name("huggingface-secret")],
 )
 class Model:
-    compile: int = (  # see section on torch.compile below for details
-        modal.parameter(default=0)
+    compile: bool = (  # see section on torch.compile below for details
+        modal.parameter(default=False)
     )
-
-    def setup_model(self):
-        from huggingface_hub import snapshot_download
-        from transformers.utils import move_cache
-
-        snapshot_download(f"black-forest-labs/FLUX.1-{VARIANT}")
-
-        move_cache()
-
-        pipe = FluxPipeline.from_pretrained(
-            f"black-forest-labs/FLUX.1-{VARIANT}", torch_dtype=torch.bfloat16
-        )
-
-        return pipe
-
-    @modal.build()
-    def build(self):
-        self.setup_model()
 
     @modal.enter()
     def enter(self):
-        pipe = self.setup_model()
-        pipe.to("cuda")  # move model to GPU
-        self.pipe = optimize(pipe, compile=bool(self.compile))
+        pipe = FluxPipeline.from_pretrained(
+            f"black-forest-labs/FLUX.1-{VARIANT}", torch_dtype=torch.bfloat16
+        ).to("cuda")  # move model to GPU
+        self.pipe = optimize(pipe, compile=self.compile)
 
     @modal.method()
     def inference(self, prompt: str) -> bytes:
@@ -208,7 +210,7 @@ def main(
 # _Super schnell_!
 
 # Compilation takes up to twenty minutes on first iteration.
-# As of time of writing in October 2024,
+# As of time of writing in late 2024,
 # the compilation artifacts cannot be fully serialized,
 # so some compilation work must be re-executed every time a new container is started.
 # That includes when scaling up an existing deployment or the first time a Function is invoked with `modal run`.
@@ -259,7 +261,7 @@ def optimize(pipe, compile=True):
     )
 
     # trigger torch compilation
-    print("🔦 running torch compiliation (may take up to 20 minutes)...")
+    print("🔦 running torch compilation (may take up to 20 minutes)...")
 
     pipe(
         "dummy prompt to trigger torch compilation",

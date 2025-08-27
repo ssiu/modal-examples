@@ -1,44 +1,47 @@
 # ---
-# lambda-test: false
+# lambda-test: false  # missing-secret
 # ---
+
 # # MultiOn: Twitter News Agent
 
 # In this example, we use Modal to deploy a cron job that periodically checks for AI news everyday and tweets it on Twitter using the MultiOn Agent API.
 
 # ## Import and define the app
-#
+
 # Let's start off with imports, and defining a Modal app.
 
 import os
 
 import modal
 
-app = modal.App("multion-news-tweet-agent")
+app = modal.App("example-multion-news-agent")
 
 # ## Searching for AI News
-#
-
 
 # Let's also define an image that has the `multion` package installed, so we can query the API.
 
 multion_image = modal.Image.debian_slim().pip_install("multion")
 
-# We can now define our main entrypoint, that uses [MultiOn](https://www.multion.ai/) to scrape AI news everyday and post it on our twitter account. We specify a [schedule](/docs/guide/cron) in the function decorator, which
+# We can now define our main entrypoint, which uses [MultiOn](https://www.multion.ai/)
+# to scrape AI news everyday and post it on our Twitter account.
+# We specify a [schedule](https://modal.com/docs/guide/cron) in the function decorator, which
 # means that our function will run automatically at the given interval.
 
 # ## Set up MultiOn
-#
-# [MultiOn](https://multion.ai/) is a next-gen Web Action Agent that can take actions on behalf of the user. You can watch it in action here: [Youtube demo](https://www.youtube.com/watch?v=Rm67ry6bogw).
-#
+
+# [MultiOn](https://multion.ai/) is a Web Action Agent that can take actions on behalf of the user.
+# You can watch it in action [here](https://www.youtube.com/watch?v=Rm67ry6bogw).
+
 # The MultiOn API enables building the next level of web automation & custom AI agents capable of performing complex actions on the internet with just a few lines of code.
-#
-# To get started, first create an account with [MultiOn](https://app.multion.ai/), install the [MultiOn chrome extension](https://chrome.google.com/webstore/detail/ddmjhdbknfidiopmbaceghhhbgbpenmm) and login to your Twitter account in your browser.
-# To use the API create a [MultiOn API Key](https://app.multion.ai/api-keys) and store it as a modal secret on [the dashboard](https://modal.com/secrets)
+
+# To get started, first create an account with [MultiOn](https://www.multion.ai/),
+# install the [MultiOn chrome extension](https://chrome.google.com/webstore/detail/ddmjhdbknfidiopmbaceghhhbgbpenmm)
+# and login to your Twitter account in your browser.
+# To use the API, create a MultiOn API Key
+# and store it as a Modal Secret on [the dashboard](https://modal.com/secrets)
 
 
-@app.function(
-    image=multion_image, secrets=[modal.Secret.from_name("MULTION_API_KEY")]
-)
+@app.function(image=multion_image, secrets=[modal.Secret.from_name("MULTION_API_KEY")])
 def news_tweet_agent():
     # Import MultiOn
     import multion
@@ -61,11 +64,11 @@ def news_tweet_agent():
 
 
 # ## Test running
-#
+
 # We can now test run our scheduled function as follows: `modal run multion_news_agent.py.py::app.news_tweet_agent`
 
 # ## Defining the schedule and deploying
-#
+
 # Let's define a function that will be called by Modal every day.
 
 
@@ -76,5 +79,5 @@ def run_daily():
 
 # In order to deploy this as a persistent cron job, you can run `modal deploy multion_news_agent.py`.
 
-# Once the job is deployed, visit the [apps page](/apps) page to see
+# Once the job is deployed, visit the [apps page](https://modal.com/apps) page to see
 # its execution history, logs and other stats.
