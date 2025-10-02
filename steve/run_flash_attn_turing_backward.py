@@ -42,7 +42,7 @@ def run_extension():
     import torch
     execute_command("git clone https://github.com/ssiu/flash-attention-turing.git")
     os.chdir("flash-attention-turing")
-    execute_command("git checkout add_tests")
+    execute_command("git checkout arbitrary_seqlen")
     #execute_command("git submodule update --init --recursive")
     #execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     os.environ["CXX"] = "g++"
@@ -53,7 +53,8 @@ def run_extension():
     execute_command("pip install -v .")
     print(torch.version.cuda)
     print(torch.__version__)
-    # execute_command("compute-sanitizer python utils/test_flash_backward.py 1 128 1 128")
+    # execute_command("compute-sanitizer python utils/test_flash_backward.py 1 128 1 128 1")
 
     #execute_command("pytest -s test_flash_attn.py::test_flash_attn_fwd_id_matrix")
-    execute_command("pytest -s test_flash_attn.py::test_flash_attn_fwd")
+    #execute_command("pytest -s test_flash_attn.py::test_flash_attn_fwd")
+    execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_bwd")
