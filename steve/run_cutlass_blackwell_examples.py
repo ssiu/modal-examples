@@ -67,5 +67,5 @@ def run_extension():
     # execute_command("python examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_0.py")
 
     # execute_command("python examples/python/CuTeDSL/blackwell/dense_gemm.py --ab_dtype Float16 --c_dtype Float16 --acc_dtype Float32 --mma_tiler_mn 256,128 --cluster_shape_mn 2,1 --mnkl 8192,8192,8192,1 --use_tma_store --use_2cta_instrs")
-    execute_command("python examples/python/CuTeDSL/blackwell/dense_gemm.py --ab_dtype Float16 --c_dtype Float16 --acc_dtype Float32 --mma_tiler_mn 128,128 --cluster_shape_mn 2,1 --mnkl 384,7168,2304,1 --use_tma_store")
+    execute_command("python examples/python/CuTeDSL/blackwell/dense_gemm.py --ab_dtype Float16 --c_dtype Float16 --acc_dtype Float32 --mma_tiler_mn 128,128 --cluster_shape_mn 1,1 --mnkl 384,7168,2304,1 --use_tma_store")
 
