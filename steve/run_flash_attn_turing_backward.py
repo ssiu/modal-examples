@@ -36,7 +36,7 @@ outputs = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 OUTPUTS_PATH = Path("/outputs")
 
 #@app.function(gpu="T4", container_idle_timeout=60, cpu=16.0, memory=65536)
-@app.function(gpu="T4", cpu=16.0, memory=65536, volumes={OUTPUTS_PATH: outputs}, timeout=3600)
+@app.function(gpu="T4", cpu=16.0, memory=65536, volumes={OUTPUTS_PATH: outputs}, timeout=6000)
 def run_extension():
 
     # flash attention develop
@@ -58,6 +58,6 @@ def run_extension():
     # execute_command("compute-sanitizer python utils/test_flash_backward.py 1 128 1 128 1")
     #execute_command("pytest -s test_flash_attn.py::test_flash_attn_fwd_id_matrix")
     execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_fwd")
-    #execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_bwd")
+    # execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_bwd")
 
     outputs.commit()

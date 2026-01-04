@@ -51,6 +51,7 @@ def run_extension():
     import torch
     execute_command("git clone https://github.com/ssiu/flash-attention-turing.git")
     os.chdir("flash-attention-turing")
+
     #execute_command("git checkout params")
     execute_command("git checkout test_params")
     #execute_command("git submodule update --init --recursive")
