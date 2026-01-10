@@ -57,7 +57,6 @@ def run_extension():
     print(torch.__version__)
     # execute_command("compute-sanitizer python utils/test_flash_backward.py 1 128 1 128 1")
     #execute_command("pytest -s test_flash_attn.py::test_flash_attn_fwd_id_matrix")
-    execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_fwd")
-    # execute_command("pytest -s -v test_flash_attn.py::test_flash_attn_bwd")
-
+    # execute_command("pytest -s -vv test_flash_attn.py::test_flash_attn_fwd")
+    execute_command("pytest -s -vv test_flash_attn.py::test_flash_attn_bwd")
     outputs.commit()
