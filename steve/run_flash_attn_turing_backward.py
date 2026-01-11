@@ -49,6 +49,7 @@ def run_extension():
     #execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     os.environ["CXX"] = "g++"
     os.environ["CC"] = "gcc"
+    # os.environ["MAX_JOBS"] = "16"
     # execute_command("ls /root/flash-attention-turing/csrc/")
     # execute_command("ls /root/flash-attention-turing/csrc/cutlass/")
     #execute_command("ls /root/flash-attention-turing/csrc/cutlass/include/cute/tensor.hpp")
