@@ -58,10 +58,12 @@ def run_extension():
     print(torch.__version__)
 
     # execute_command("pytest -s -vv test_flash_attn.py::test_flash_attn_bwd")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn_old.py::test_flash_attn_bwd")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn_old.py::test_flash_attn_bwd_varlen")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_bwd")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_bwd_varlen")
 
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn")
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen")
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkvpacked")
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kvpacked")
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
+    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kvpacked")
 
     outputs.commit()
