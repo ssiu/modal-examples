@@ -44,7 +44,7 @@ def run_extension():
     import torch
     execute_command("git clone https://github.com/ssiu/flash-attention-turing.git")
     os.chdir("flash-attention-turing")
-    execute_command("git checkout misc_fixes")
+    execute_command("git checkout qkv_packed")
     #execute_command("git submodule update --init --recursive")
     #execute_command("git clone https://github.com/NVIDIA/cutlass.git")
     os.environ["CXX"] = "g++"
@@ -59,11 +59,15 @@ def run_extension():
 
     # execute_command("pytest -s -vv test_flash_attn.py::test_flash_attn_bwd")
 
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkvpacked")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kvpacked")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
-    execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kvpacked")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkvpacked")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kvpacked")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kvpacked")
 
+    execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_qkvpacked")
+    execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_kvpacked")
+    execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
+    execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_varlen_kvpacked")
     outputs.commit()
