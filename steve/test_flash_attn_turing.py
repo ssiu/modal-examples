@@ -44,27 +44,43 @@ def run_extension():
     import torch
     execute_command("git clone https://github.com/ssiu/flash-attention-turing.git")
     os.chdir("flash-attention-turing")
-    execute_command("git checkout causal_mask")
-    #execute_command("git submodule update --init --recursive")
-    #execute_command("git clone https://github.com/NVIDIA/cutlass.git")
+    execute_command("git checkout final_clean_up")
+
+    subprocess.run(
+    ["python", "-c", "import torch; print(torch.__version__)"],
+    stdout=sys.stdout,
+    stderr=subprocess.STDOUT,
+    check=True,
+    )
+
+    # execute_command("git clone https://github.com/ssiu/flash-attention")
+    # os.chdir("flash-attention")
+    # execute_command("git checkout turing")
+    # os.chdir("turing")
+    
+
     os.environ["CXX"] = "g++"
     os.environ["CC"] = "gcc"
-    # os.environ["MAX_JOBS"] = "16"
-    # execute_command("ls /root/flash-attention-turing/csrc/")
-    # execute_command("ls /root/flash-attention-turing/csrc/cutlass/")
-    #execute_command("ls /root/flash-attention-turing/csrc/cutlass/include/cute/tensor.hpp")
+
     execute_command("pip install -v .")
     print(torch.version.cuda)
     print(torch.__version__)
 
-    # execute_command("pytest -s -vv test_flash_attn.py::test_flash_attn_bwd")
 
     execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn")
     execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkvpacked")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kvpacked")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
-    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kvpacked")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkv")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kv")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkv")
+    # execute_command("pytest -s -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kv")
+
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn")
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen")
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_qkvpacked")
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_kvpacked")
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_qkvpacked")
+    # execute_command("pytest -vv --tb=short -rfE test_flash_attn.py::test_flash_attn_varlen_kvpacked")
+
 
     # execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_qkvpacked")
     # execute_command("pytest -q --disable-warnings --tb=short test_flash_attn.py::test_flash_attn_kvpacked")
